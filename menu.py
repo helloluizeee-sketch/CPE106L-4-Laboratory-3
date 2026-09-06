@@ -1,4 +1,3 @@
-# Abstract Base Class for Object-Oriented Design
 class MenuItem:
     def __init__(self, name, price):
         self._name = name
@@ -13,7 +12,6 @@ class MenuItem:
     def display_item(self):
         pass
 
-# Inheritance: Food Item
 class Food(MenuItem):
     def __init__(self, name, price, is_vegan=False):
         super().__init__(name, price)
@@ -23,7 +21,6 @@ class Food(MenuItem):
         vegan_str = " (Vegan)" if self._is_vegan else ""
         print(f"[Food] {self._name} - P{self._price:.2f}{vegan_str}")
 
-# Inheritance: Beverage Item
 class Beverage(MenuItem):
     def __init__(self, name, price, size="Large"):
         super().__init__(name, price)
