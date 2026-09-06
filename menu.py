@@ -45,6 +45,7 @@ class Menu:
 if __name__ == "__main__":
     startup_menu = Menu()
 
+def run_menu_system(startup_menu):
     while True:
         print("\n=== Menu Management System ===")
         print("1. View Menu")
@@ -59,7 +60,7 @@ if __name__ == "__main__":
                 
         elif choice == '2':
             print("\n--- Add New Item ---")
-            item_id = input("Enter Item ID (e.g., D1): ")
+            item_id = input("Enter Item ID (e.g., D1): ").strip().upper()
             name = input("Enter Item Name: ")
             
             try:
@@ -71,7 +72,7 @@ if __name__ == "__main__":
                 print("Error: Please enter a valid number for the price.")
                 
         elif choice == '3':
-            item_id = input("Enter the ID of the item to remove (e.g., CHX01): ")
+            item_id = input("Enter the ID of the item to remove (e.g., D1): ").strip().upper()
             startup_menu.remove_item(item_id)
             
         elif choice == '4':
