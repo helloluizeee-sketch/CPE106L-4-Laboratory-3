@@ -54,7 +54,6 @@ class OrderProcessor:
     def create_order(self, order_id, customer_name):
         order = Order(order_id, customer_name)
         self.orders.append(order)
-        print(f"Successfully created order {order_id} for {customer_name}!")
         return order
 
     def find_order(self, order_id):
@@ -77,16 +76,7 @@ class OrderProcessor:
             order.display_info()
 
 
-if __name__ == "__main__":
-    from menu_management_module import MenuItem
-
-    sample_menu_items = [
-        MenuItem("D1", "Chicken Adobo", 185.00, "Classic Filipino braised chicken"),
-        MenuItem("D2", "Sinigang na Baboy", 220.00, "Sour pork stew with vegetables"),
-        MenuItem("D3", "Iced Tea", 45.00, "House-blend iced tea"),
-    ]
-    processor = OrderProcessor()
-
+def run_order_system(processor, menu_items, customer_manager=None):
     while True:
         print("\n=== Order Processing System ===")
         print("1. Create Order  2. Add Item  3. Remove Item  4. View Active Orders")
@@ -95,28 +85,42 @@ if __name__ == "__main__":
 
         if choice == '1':
             oid = input("Order ID: ")
-            name = input("Customer Name: ")
-            processor.create_order(oid, name)
+            cust_id = input("Customer ID: ") 
+            
+            customer = customer_manager.find_customer(cust_id) if customer_manager else None
+            
+            if customer:
+                name = customer.get_name()
+                order = processor.create_order(oid, name)
+                customer.add_order_to_history(order)
+                print(f"Successfully created order {oid} and linked it to customer: {name}")
+            else:
+                print("Error: Customer ID not found in system! Please register the customer first.")
 
         elif choice == '2':
             order = processor.find_order(input("Order ID: "))
             if order:
-                for item in sample_menu_items:
-                    item.display_info()
-                item_id = input("Item ID to add: ")
-                match = next((i for i in sample_menu_items if i.item_id == item_id), None)
-                if match:
-                    try:
-                        order.add_item(match, int(input("Quantity: ")))
-                    except ValueError:
-                        print("Error: enter a valid whole number.")
+                if not menu_items:
+                    print("\n--- The menu is currently empty. ---")
                 else:
-                    print("Item ID not found in menu.")
+                    for item in menu_items:
+                        item.display_info()
+                    item_id = input("Item ID to add: ").strip().upper()
+                    match = next((i for i in menu_items if i.item_id.strip().upper() == item_id), None)
+                    if match:
+                        try:
+                            order.add_item(match, int(input("Quantity: ")))
+                        except ValueError:
+                            print("Error: enter a valid whole number.")
+                    else:
+                        print("Item ID not found in menu.")
 
-        elif choice == '3':
-            order = processor.find_order(input("Order ID: "))
+        elif choice == '3':  # Remove Item
+            oid = input("Enter Order ID: ").strip()
+            order = processor.find_order(oid)
             if order:
-                order.remove_item(input("Item ID to remove: "))
+                item_id = input("Enter Item ID to remove: ").strip()
+                order.remove_item(item_id)
 
         elif choice == '4':
             processor.display_all_orders()
@@ -140,3 +144,13 @@ if __name__ == "__main__":
 
         else:
             print("Invalid choice. Please select a number from 1 to 8.")
+
+if __name__ == "__main__":
+    from menu import MenuItem
+    sample_menu_items = [
+        MenuItem("D1", "Chicken Adobo", 185.00, "Classic Filipino braised chicken"),
+    ]
+    processor = OrderProcessor()
+    run_order_system(processor, sample_menu_items)
+
+    processor = OrderProcessor()

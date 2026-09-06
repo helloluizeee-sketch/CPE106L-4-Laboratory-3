@@ -187,3 +187,71 @@ if __name__ == "__main__":
     delivery1.update_status("Delivered")
 
     manager.view_completed_transactions()
+
+def run_payment_delivery_system(manager):
+    while True:
+        print("\n=== Payment & Delivery Management ===")
+        print("1. Process Checkout (Pay & Ship)")
+        print("2. View Completed Transactions")
+        print("3. Return to Main Menu")
+        choice = input("Enter your choice (1-3): ")
+
+        if choice == '1':
+            order_id = input("Enter Order ID: ")
+            try:
+                amount = float(input("Enter Total Amount to Pay (PHP): "))
+            except ValueError:
+                print("Invalid amount entered.")
+                continue
+                
+            address = input("Enter Delivery Address: ")
+            rider = input("Enter Rider Name (Press Enter for default 'Unassigned'): ")
+            if not rider.strip():
+                rider = "Unassigned"
+
+            print("\nSelect Payment Method:")
+            print("1. Cash")
+            print("2. Card")
+            print("3. E-Wallet (GCash/Maya)")
+            pay_choice = input("Choose payment method (1-3): ")
+
+            payment = None
+            if pay_choice == '1':
+                try:
+                    tendered = float(input("Enter Cash Tendered (PHP): "))
+                except ValueError:
+                    print("Invalid cash amount.")
+                    continue
+                payment = CashPayment(amount, tendered)
+                
+            elif pay_choice == '2':
+                card_num = input("Enter Card Number (e.g., 1234567890123456): ")
+                card_holder = input("Enter Cardholder Name: ")
+                payment = CardPayment(amount, card_num, card_holder)
+                
+            elif pay_choice == '3':
+                acc_num = input("Enter Account Number (min 10 digits): ")
+                provider = input("Enter Provider [GCash/Maya] (Default GCash): ")
+                if not provider.strip():
+                    provider = "GCash"
+                payment = EWalletPayment(amount, acc_num, provider)
+            else:
+                print("Invalid payment choice.")
+                continue
+
+            delivery = Delivery(delivery_id=f"DEL-{order_id}", address=address, rider_name=rider)
+            manager.checkout(order_id, payment, delivery)
+
+        elif choice == '2':
+            manager.view_completed_transactions()
+
+        elif choice == '3':
+            print("Returning to Main Menu...")
+            break
+
+        else:
+            print("Invalid choice. Please select 1 to 3.")
+
+if __name__ == "__main__":
+    manager = PaymentDeliveryManager()
+    run_payment_delivery_system(manager)
