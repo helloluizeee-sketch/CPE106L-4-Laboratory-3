@@ -93,18 +93,23 @@ class Delivery:
             self._status = "Preparing"
         print(f"[Delivery] Rider '{self.rider_name}' assigned to delivery #{self.delivery_id}.")
 
-    def update_status(self, new_status: str):
+    def update_status(self, new_status: str, order=None):
         if new_status in self.VALID_STATUSES:
             self._status = new_status
             print(f"[Delivery #{self.delivery_id}] Status updated to: {self._status}")
+            if order and hasattr(order, "advance_status") and hasattr(order, "get_status"):
+                if new_status == "Delivered" and order.get_status() != "Completed":
+                    while order.get_status() != "Completed":
+                        order.advance_status()
         else:
             print(f"[Delivery] Invalid status '{new_status}'. Allowed: {self.VALID_STATUSES}")
 
 
 class Transaction:
-    def __init__(self, transaction_id: str, order_id: str, payment: Payment, delivery: Delivery):
+    def __init__(self, transaction_id: str, order_id: str, customer_name: str, payment: Payment, delivery: Delivery):
         self.transaction_id = transaction_id
         self.order_id = order_id
+        self.customer_name = customer_name
         self.payment = payment
         self.delivery = delivery
         self.timestamp = datetime.now()
@@ -114,6 +119,7 @@ class Transaction:
             f"--- Transaction Receipt [{self.transaction_id}] ---\n"
             f"Timestamp: {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"Order ID: {self.order_id}\n"
+            f"Customer: {self.customer_name}\n"
             f"Amount Paid: PHP {self.payment.amount:.2f}\n"
             f"Payment Method: {self.payment.__class__.__name__} ({self.payment.status})\n"
             f"Delivery Address: {self.delivery.address}\n"
@@ -126,14 +132,29 @@ class PaymentDeliveryManager:
     def __init__(self):
         self._transactions = []
 
-    def checkout(self, order_id: str, payment: Payment, delivery: Delivery) -> bool:
-        print(f"\nProcessing checkout for Order #{order_id}...")
+    def checkout(self, order, payment: Payment, delivery: Delivery, customer=None) -> bool:
+        order_id = getattr(order, "order_id", str(order))
+        customer_name = "Guest"
+
+        if hasattr(order, "customer_name"):
+            customer_name = order.customer_name
+        elif customer and hasattr(customer, "get_name"):
+            customer_name = customer.get_name()
+
+        print(f"\nProcessing checkout for Order #{order_id} ({customer_name})...")
         is_successful = payment.process_payment()
 
         if is_successful:
             delivery.update_status("Preparing")
+            if hasattr(order, "advance_status") and hasattr(order, "get_status"):
+                if order.get_status() == "Pending":
+                    order.advance_status()
+
+            if customer and hasattr(customer, "add_order_to_history"):
+                customer.add_order_to_history(order)
+
             tx_id = f"TXN-{len(self._transactions) + 1:04d}"
-            transaction = Transaction(tx_id, order_id, payment, delivery)
+            transaction = Transaction(tx_id, order_id, customer_name, payment, delivery)
             self._transactions.append(transaction)
             print(f"Checkout successful. Transaction registered: {tx_id}")
             return True
@@ -156,12 +177,12 @@ if __name__ == "__main__":
     delivery1 = Delivery(delivery_id="DEL-101", address="123 Ayala Ave, Makati")
     delivery1.assign_rider("Carlos")
     cash_pay = CashPayment(amount=450.00, cash_tendered=500.00)
-    manager.checkout(order_id="ORD-001", payment=cash_pay, delivery=delivery1)
+    manager.checkout(order="ORD-001", payment=cash_pay, delivery=delivery1)
 
     delivery2 = Delivery(delivery_id="DEL-102", address="456 BGC High Street, Taguig")
     delivery2.assign_rider("Marco")
     ewallet_pay = EWalletPayment(amount=820.50, account_number="09171234567")
-    manager.checkout(order_id="ORD-002", payment=ewallet_pay, delivery=delivery2)
+    manager.checkout(order="ORD-002", payment=ewallet_pay, delivery=delivery2)
 
     delivery1.update_status("Delivered")
 
